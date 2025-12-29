@@ -23,6 +23,7 @@ from .src.model import Chroma, chroma_params
 from safetensors.torch import load_file, save_file
 from toolkit.metadata import get_meta_for_safetensors
 import huggingface_hub
+from toolkit.unloader import FakeTextEncoder
 
 if TYPE_CHECKING:
     from toolkit.data_transfer_object.data_loader import DataLoaderBatchDTO
@@ -106,7 +107,7 @@ class ChromaModel(BaseModel):
             # get the latest checkpoint
             files_list = huggingface_hub.list_repo_files(model_path)
             print(files_list)
-            latest_version = 28 # current latest version at time of writing
+            latest_version = 50 # current latest version at time of writing
             while True:
                 if f"chroma-unlocked-v{latest_version}.safetensors" not in files_list:
                     latest_version -= 1
@@ -421,7 +422,11 @@ class ChromaModel(BaseModel):
 
     def get_te_has_grad(self):
         # return from a weight if it has grad
-        return self.text_encoder[1].encoder.block[0].layer[0].SelfAttention.q.weight.requires_grad
+        # return self.text_encoder[1].encoder.block[0].layer[0].SelfAttention.q.weight.requires_grad
+        te = self.text_encoder[1]
+        if isinstance(te, FakeTextEncoder):
+            return False
+        return te.encoder.block[0].layer[0].SelfAttention.q.weight.requires_grad
     
     def save_model(self, output_path, meta, save_dtype):
         if not output_path.endswith(".safetensors"):

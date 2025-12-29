@@ -54,6 +54,7 @@ def unload_text_encoder(model: "BaseModel"):
             while hasattr(pipe, f"text_encoder_{i}"):
                 te = FakeTextEncoder(device=model.device_torch, dtype=model.torch_dtype)
                 text_encoder_list.append(te)
+                getattr(pipe, f"text_encoder_{i}").to('cpu')
                 setattr(pipe, f"text_encoder_{i}", te)
                 i += 1
             model.text_encoder = text_encoder_list
